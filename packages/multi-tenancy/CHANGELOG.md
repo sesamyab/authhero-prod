@@ -1,5 +1,24 @@
 # @authhero/multi-tenancy
 
+## 15.3.0
+
+### Minor Changes
+
+- 4ead040: Add a per-tenant `config_sync` mode (`inherit-on-read`, the default, or `synced`). In `synced` mode the runtime fallback adapters, system resource server scopes, client URL merging, inherited actions and control-plane service tokens read only the tenant's own database. The mode is looked up through one shared resolver with a 30 second per-isolate cache, exposed as `multiTenancyConfig.resolveControlPlane` even when the host passes none. Only a control-plane credential can change it (`403` for a tenant's own admin, unchanged values are accepted so the admin UI can round-trip the record); it can be set in the admin UI under Settings → Advanced. Shadow mode skips synced tenants. New nullable `tenants.config_sync` column (kysely migration, drizzle `0014`).
+- df0cb5b: Add the resolved config block for tenant config sync. `buildResolvedConfigBlock` merges a tenant's parent chain (actions, code hooks with their hook code, connections, resource servers and more) and `applyResolvedConfigBlock` materialises it under the tenant's own id with deterministic row ids, a content hash stored in the new `tenants.config_sync_hash` / `config_synced_at` columns (an up-to-date push is a no-op), a dry run, explicit opt-in deletes and a key-ring check that refuses to write when the tenant cannot decrypt a key id in the payload. The drizzle adapter now honours `importMetadata.id` for actions and hook code. `config_sync_*` is ignored on tenant PATCH.
+- d01fb3d: Hide platform-scoped rows that a config sync delivered into a tenant from that tenant's management API. Actions (with versions and executions), hooks, hook code, connections, resource servers and, for tenants that receive config, the email provider with `scope: "platform"` and a synced id are missing from lists, answer 404 on get/update/delete, cannot be referenced by hooks or bindings, and are left out of tenant exports. The MCP endpoint, which calls these routes, follows. Control-plane credentials still see them, and code hooks that run inline in a management request read an unfiltered stack (`getExecutorData`), so platform hooks keep running. `protect-synced` now also enforces `override` and `enforce` on synced copies of connections, resource servers, actions and hooks, and refuses edits to code copied for a hook. New exports: `isSyncedRowId`, `withPlatformRowsHidden`, `getExecutorData`.
+- 938f6eb: Add the `sync-defaults` tenant operation. `POST /tenants/{id}/operations` with `{ "kind": "sync-defaults", "input": { "dry_run": true } }` syncs a tenant's resolved parent-chain config into its database as a tracked operation with step events and history, returns the diff of a dry run in the operation's `result`, and leaves a queryable `failed` row (returned with `201`) when a row or the transport fails. `initMultiTenant` wires an inline executor that syncs tenants sharing the control plane's database in-process; `syncDefaults` takes a transport for tenants with their own database. On Cloudflare, `runSyncDefaultsOperation` runs it as a Workflows instance (the executor now accepts `sync-defaults`), `createDispatchSyncConfig` pushes the resolved block to the new tenant route `/internal/sync-config` (true dry run, key-ring check, no seeds or signing keys), and the reconciler resolves a completed sync correctly. Operation `input` can now be set at creation, the recorder can store a `result`, and an executor binding can list the `kinds` it runs (others answer `501`). The admin UI gets "Preview sync" and "Sync config" actions with the diff shown per operation.
+
+### Patch Changes
+
+- Updated dependencies [4ead040]
+- Updated dependencies [df0cb5b]
+- Updated dependencies [500811d]
+- Updated dependencies [d01fb3d]
+- Updated dependencies [938f6eb]
+  - @authhero/adapter-interfaces@4.23.0
+  - authhero@9.26.0
+
 ## 15.2.0
 
 ### Minor Changes
