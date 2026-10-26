@@ -1,5 +1,23 @@
 # @authhero/cloudflare-adapter
 
+## 3.3.0
+
+### Minor Changes
+
+- 938f6eb: Add the `sync-defaults` tenant operation. `POST /tenants/{id}/operations` with `{ "kind": "sync-defaults", "input": { "dry_run": true } }` syncs a tenant's resolved parent-chain config into its database as a tracked operation with step events and history, returns the diff of a dry run in the operation's `result`, and leaves a queryable `failed` row (returned with `201`) when a row or the transport fails. `initMultiTenant` wires an inline executor that syncs tenants sharing the control plane's database in-process; `syncDefaults` takes a transport for tenants with their own database. On Cloudflare, `runSyncDefaultsOperation` runs it as a Workflows instance (the executor now accepts `sync-defaults`), `createDispatchSyncConfig` pushes the resolved block to the new tenant route `/internal/sync-config` (true dry run, key-ring check, no seeds or signing keys), and the reconciler resolves a completed sync correctly. Operation `input` can now be set at creation, the recorder can store a `result`, and an executor binding can list the `kinds` it runs (others answer `501`). The admin UI gets "Preview sync" and "Sync config" actions with the diff shown per operation.
+
+### Patch Changes
+
+- Updated dependencies [4ead040]
+- Updated dependencies [df0cb5b]
+- Updated dependencies [500811d]
+- Updated dependencies [d01fb3d]
+- Updated dependencies [938f6eb]
+  - @authhero/multi-tenancy@15.3.0
+  - @authhero/adapter-interfaces@4.23.0
+  - @authhero/kysely-adapter@12.17.0
+  - authhero@9.26.0
+
 ## 3.2.5
 
 ### Patch Changes

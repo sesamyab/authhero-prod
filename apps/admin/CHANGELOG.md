@@ -1,5 +1,20 @@
 # @authhero/admin
 
+## 0.24.0
+
+### Minor Changes
+
+- 4ead040: Add a per-tenant `config_sync` mode (`inherit-on-read`, the default, or `synced`). In `synced` mode the runtime fallback adapters, system resource server scopes, client URL merging, inherited actions and control-plane service tokens read only the tenant's own database. The mode is looked up through one shared resolver with a 30 second per-isolate cache, exposed as `multiTenancyConfig.resolveControlPlane` even when the host passes none. Only a control-plane credential can change it (`403` for a tenant's own admin, unchanged values are accepted so the admin UI can round-trip the record); it can be set in the admin UI under Settings → Advanced. Shadow mode skips synced tenants. New nullable `tenants.config_sync` column (kysely migration, drizzle `0014`).
+- ef392b3: Redesign the admin UI to match the new website: Familjen Grotesk and JetBrains Mono, ink and saffron colours, a saffron plus logo and favicon, saffron active states in the sidebar and tabs, larger page titles, a dashboard with bar charts and recent activity, and a user header with avatar, verified badge and user ID.
+- 938f6eb: Add the `sync-defaults` tenant operation. `POST /tenants/{id}/operations` with `{ "kind": "sync-defaults", "input": { "dry_run": true } }` syncs a tenant's resolved parent-chain config into its database as a tracked operation with step events and history, returns the diff of a dry run in the operation's `result`, and leaves a queryable `failed` row (returned with `201`) when a row or the transport fails. `initMultiTenant` wires an inline executor that syncs tenants sharing the control plane's database in-process; `syncDefaults` takes a transport for tenants with their own database. On Cloudflare, `runSyncDefaultsOperation` runs it as a Workflows instance (the executor now accepts `sync-defaults`), `createDispatchSyncConfig` pushes the resolved block to the new tenant route `/internal/sync-config` (true dry run, key-ring check, no seeds or signing keys), and the reconciler resolves a completed sync correctly. Operation `input` can now be set at creation, the recorder can store a `result`, and an executor binding can list the `kinds` it runs (others answer `501`). The admin UI gets "Preview sync" and "Sync config" actions with the diff shown per operation.
+
+### Patch Changes
+
+- Updated dependencies [4ead040]
+- Updated dependencies [df0cb5b]
+- Updated dependencies [938f6eb]
+  - @authhero/adapter-interfaces@4.23.0
+
 ## 0.23.0
 
 ### Minor Changes
